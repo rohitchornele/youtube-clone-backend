@@ -1,8 +1,11 @@
+// Helper wrapper code for handling async functions...
+// Adavantage is no need to use try, catch or promise for everything
+
 const asyncHandler = (requestHandler) => {
-    (req, res, next) => {
+    return ((req, res, next) => {
         Promise.resolve(requestHandler(req, res, next)).
         catch((err) => next(err));
-    }
+    })
 }
 
 export {asyncHandler}
