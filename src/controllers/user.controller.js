@@ -169,8 +169,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -258,9 +258,25 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
 })
 
 const getCurrentUser = asyncHandler( async(req, res) => {
+
+  const user = await User.findById(
+    req.user._id,
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
   return res
   .status(200)
-  .json(200, req.user, "Current user fetched successfully")
+  .json(
+    new ApiResponse(
+      200,
+      user,
+      "User fetched Successfully"
+    )
+  )
 })
 
 const updateAccountDetails = asyncHandler( async(req, res) => {
@@ -288,7 +304,7 @@ const updateAccountDetails = asyncHandler( async(req, res) => {
 
 });
 
-const updateUserAndAvatar = asyncHandler( async (req, res) => {
+const updateUserAvatar = asyncHandler( async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {
@@ -357,9 +373,9 @@ const updateUserCoverImage = asyncHandler( async (req, res) => {
 })
 
 const getUserChannelProfile = asyncHandler( async (req, res) => {
-  const { username } = req.params;
+  const {username} = req.params;
 
-  if (!username?.trim()) {
+  if (!(username?.trim())) {
     throw new ApiError(400, "Username not found")
   }
 
@@ -371,7 +387,7 @@ const getUserChannelProfile = asyncHandler( async (req, res) => {
     },
     {
       $lookup: {
-        from: "Subscriptions",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "channel",
         as: "subsribers"
@@ -379,7 +395,7 @@ const getUserChannelProfile = asyncHandler( async (req, res) => {
     },
     {
       $lookup: {
-        from: "Subscriptions",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "subscriber",
         as: "subscribedTo"
@@ -436,19 +452,19 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match : {
-        _id: mongoose.Types.ObjectId(req.user?._id),
+        _id: new mongoose.Types.ObjectId(req.user?._id),
       }
     },
     {
       $lookup : {
-        from : "videos",
+        from : "Video",
         localField: "watchHistory",
         foreignField: "_id",
         as: "watchHistory",
         pipeline: [
           {
             $lookup: {
-              from: "users",
+              from: "User",
               localField: "owner",
               foreignField: "_id",
               as: "owner",
@@ -497,7 +513,7 @@ export {
   changeCurrentPassword, 
   getCurrentUser,
   updateAccountDetails,
-  updateUserAndAvatar,
+  updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
